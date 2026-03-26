@@ -357,7 +357,47 @@ class Dungeon {
 		};
 
 		int getmaxchild();
-		void editnode(DungeonNode* node, vector <int> path, int newdata);
+
+		/**
+		 * Edit a node.
+		 *
+		 * @param node (DungeonNode *) - the node
+		 * @param data (int) the data
+		 */
+		bool editnode(DungeonNode* node, int data) {
+			return node->changedata(data);
+		};
+
+		/**
+		 * Edit a node.
+		 * @param path (vector<int>) - the node’s path
+		 * @param data (int) the data
+		 * @return bool
+		 * @returns Was the data updated successfully?
+		 */
+		void editnode(vector<int> path, int data) {
+			DungeonNode *node = this->head;
+			for (int indices[2] = {0, 0}; this->head && path.size() && (indices[0] < path.size()); indices[0]++) {
+				indices[1] = path[indices[0]];
+
+				if ((node->getchildren()).size() < indices[1]) {
+					// That's when we have a problem
+					return false;
+				};
+
+				// Update the node
+				node = node->getchildren(indices[1]);
+
+				// If this is the last element, we must edit it.
+				if (indices[0] == (path.size() - 1)) {
+					return this->editnode(node, data);
+				};
+			};
+
+			// Base case is to return false
+			return false;
+		};
+
 		int findmaxvalue(DungeonNode* node, int maxholdervalue);
 		int findmaxsum(DungeonNode* node, int maxholdersum, int currentsum);
 		vector <int> findbestroom(DungeonNode* node, vector <int> temp, int maxvalue, vector <int> holder);
