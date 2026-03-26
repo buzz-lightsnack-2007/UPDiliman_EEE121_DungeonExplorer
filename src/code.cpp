@@ -1,5 +1,6 @@
 # include <iostream>
 # include <vector>
+# include <queue>
 # include <algorithm>
 
 using namespace std;
@@ -88,6 +89,11 @@ class Dungeon {
 		 * @private
 		 */
 		DungeonNode *head;
+
+		/**
+		 * Maximum supported children
+		 * @private
+		 */
 		int maxchild;
 
 	protected:
@@ -224,10 +230,112 @@ class Dungeon {
 			return values;
 		};
 
-		// We have to do a BFS for this one.
-		void displayTree(DungeonNode* node, vector<int>);
-		vector <int> getnodelist(DungeonNode* node, vector <int> temp, int currdepth, int depthtoget);
-		vector <int> getnodelisthelper(DungeonNode* node, vector <int> temp, int maxdepth);
+		/**
+		 * Generate a tree of dungeons.
+		 *
+		 * @param blocked (int) - Should this call consider blocked paths?
+		 * @return vector<vector<DungeonNode*>>
+		 */
+		vector<vector<DungeonNode*>> tree(int blocked = 0) {
+			// The tree
+			vector<vector<DungeonNode*>> tree;
+			if (!(tree.size())) {return tree; }; // If tree is empty, return that, because we can't generate a tree.
+
+			queue<DungeonNode*> order; // Queue of nodes to process
+			queue<int> levels; // What level does it go to?
+			queue<bool> status;
+
+			// Now, place it inside everything, so we can process that having seen it
+			order.push(this->head);
+			levels.push(1);
+
+			if (blocked && (this->head)->getdata() == -1) {status.push(false); // Marked this as blocked
+			} else {status.push(true); // Normally it's true
+			};
+
+			// The level
+			vector<DungeonNode*> level = {this->head};
+			tree.push_back(level);
+
+			// While the order isn't empty, we deal with it
+			while (!(order.empty())) {
+				DungeonNode* node = order.front(); // The node
+				int node_level = levels.front(); // The current level
+				vector<DungeonNode*> children = node->getchildren(); // The children of that node
+
+				// Is the size correct? If not, let's fix it. For example, at `node_level` 1, the size is still 1, so we need to add by 1
+				while (tree.size() < (node_level + 1)) { // Make the size equal to the target
+					level.clear(); // Clear the level
+					tree.push_back(level);
+				};
+
+				for (int index = 0; index < children.size(); index++) { // It's chronological so we can assume (hopefully) that the order at which the children are inserted also are
+					DungeonNode *child = children[index]; // Add the children
+
+					if (status.front()) {
+						tree[node_level].push_back(child); // Put the child here
+					} else {
+						// Our plan is to replace this as blocked, everything else as blocked, etc.
+						/**
+						 * @todo if it is blocked, then we must find a way so that every other children is blocked
+						 */
+						// We create a "blocked" node as a standin for the child
+					};
+
+					// Now add this for further processing
+					order.push(node);
+					levels.push(node_level + 1);
+				};
+
+				// Dequeue everything
+				levels.pop();
+				order.pop();
+				status.pop();
+			};
+
+			return tree;
+		};
+
+		/**
+		 * Displays the tree.
+		 * @param verbose (bool) - the verbosity
+		 * @return vector<vector<DungeonNode*>>
+		 */
+		vector<vector<DungeonNode*>> tree(bool verbose) {
+			vector<vector<DungeonNode*>> tree = this->tree();
+
+			if (verbose) {
+				for (int level[2] = {0, 0}; level[0] < tree.size(); level[0]++) {
+					for (level[1] = 0; level[1] < tree[level[0]].size(); level[1]++) {
+						cout << tree[level[0]][level[1]] << "|";
+					};
+					cout << endl;
+				};
+			};
+
+			return tree;
+		};
+
+		vector <int> getnodelist(DungeonNode* node, vector <int> temp, int currdepth, int depthtoget){
+			if(depthtoget == currdepth){
+				temp.push_back(node->data); // Push back the current node's data
+			}
+			for(int i = 0; i < (node->getchildren()).size(); i++){
+				if (node->getchildren(i)) { // For each children
+					temp = this->getnodelist(node->children[i], temp, currdepth + 1, depthtoget);
+				};
+			};
+			return temp;
+		};
+
+		vector <int> getnodelisthelper(DungeonNode* node, vector <int> temp, int maxdepth){
+			for(int i = 0; i <= maxdepth; i++) {
+				temp = getnodelist(node, temp, 0, i); // Merge the provided vector for each depth
+			}
+    		return temp;
+		};
+
+
 		vector <int> getnodelist2(DungeonNode* node, vector <int> temp, int currdepth, int depthtoget, int blocked);
 		vector <int> getnodelisthelper2(DungeonNode* node, vector <int> temp, int maxdepth);
 
