@@ -443,7 +443,25 @@ class Dungeon {
 			return this->depth(this->head, offset);
 		};
 
-		int getmaxchild();
+		/**
+		 * Get the node with the extrema (maximum or minimum) value.
+		 * @param type (int) - 1 for maxima, -1 for minima
+		 * @return DungeonNode*
+		 * @returns the node with the extrema value
+		 */
+		DungeonNode* extrema(int type) {
+			vector<DungeonNode*> list = this->list(); // The list of nodes
+			if (list.empty() || type == 0) {return nullptr;};
+
+			DungeonNode* leaderboard = list[0];
+			for (int index = 1; index < list.size(); index++) {
+				if ((type < 0 && list[index]->getdata() < leaderboard->getdata()) || (type > 0 && list[index]->getdata() > leaderboard->getdata())) {
+					leaderboard = list[index];
+				};
+			};
+
+			return leaderboard;
+		};
 
 		/**
 		 * Edit a node.
