@@ -426,10 +426,6 @@ class Dungeon {
     		return temp;
 		};
 
-
-		vector <int> getnodelist2(DungeonNode* node, vector <int> temp, int currdepth, int depthtoget, int blocked);
-		vector <int> getnodelisthelper2(DungeonNode* node, vector <int> temp, int maxdepth);
-
 		/**
 		 * The dungeon's size
 		 * @return int
@@ -448,16 +444,6 @@ class Dungeon {
 		};
 
 		int getmaxchild();
-
-		/**
-		 * Edit a node.
-		 *
-		 * @param node (DungeonNode *) - the node
-		 * @param data (int) the data
-		 */
-		bool editnode(DungeonNode* node, int data) {
-			return node->changedata(data);
-		};
 
 		/**
 		 * Edit a node.
@@ -481,7 +467,7 @@ class Dungeon {
 
 				// If this is the last element, we must edit it.
 				if (indices[0] == (path.size() - 1)) {
-					return this->editnode(node, data);
+					return node->changedata(data);
 				};
 			};
 
