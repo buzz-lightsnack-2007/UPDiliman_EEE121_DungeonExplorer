@@ -15,6 +15,12 @@ class DungeonNode {
 		 * @private
 		 */
 		vector <DungeonNode*> children;
+
+		/**
+		 * The blocked state
+		 * @private
+		 */
+		bool blocked = false;
 	public:
 		/**
 		 * Construct a new Dungeon Node object.
@@ -68,10 +74,32 @@ class DungeonNode {
 		 * Replace this dungeon's data.
 		 *
 		 * @param data (int)
+		 * @return bool
+		 * @returns Was the node's data updated successfully?
 		 */
-		void changedata(int data) {
+		int changedata(int data) {
 			this->data = data;
+			return (this->data == data);
 		};
+
+		/**
+		 * Get the blocking state, which may be defined automatically (by setting data to -1) or manually (by using setblocking).
+		 * @return bool
+		 * @returns the blocking state: True if blocked, false otherwise
+		 */
+		bool getblocking() {
+			return (this->blocked || this->data == -1);
+		}
+
+		/**
+		 * Set the blocking state.
+		 * @return bool
+		 * @returns Update success state
+		 */
+		bool setblocking(bool status) {
+			this->blocked = status;
+			return (this->getblocking() == status);
+		}
 
 		friend class Dungeon;
 };
@@ -183,26 +211,23 @@ class Dungeon {
 		};
 
 		/**
-		 * Traverse through the dungeons.
+		 * List all nodes.
 		 *
 		 * @param node (DungeonNode *) - a reference node
-		 * @param use_nodes (bool) - Fill this with any value to use this traversal
 		 * @return vector<DungeonNode*>
 		 */
-		vector<DungeonNode*> traverse(DungeonNode* node, bool use_nodes) {
+		vector<DungeonNode*> list(DungeonNode* node = nullptr) {
 			// The collected nodes
-			vector<DungeonNode*> nodes = {node};
+			vector<DungeonNode*> nodes;
 
-			// The children nodes
-			vector<DungeonNode*> children = node->getchildren(); // DON'T MERGE
-			for (int side = 0; side < children.size(); side++) {
-				DungeonNode* child = children[side];
+			// We will use the tree to generate the list.
+			vector<vector<DungeonNode*>> tree = this->tree(node);
 
-				// The descendant nodes, for recursive insertion
-				vector<DungeonNode*> descendants = this->traverse(child, true);
-				for (int descendant = 0; descendant < descendants.size(); descendant++) {
-					nodes.push_back(descendants[descendant]); // Copy it here
-				}
+			// Iterate through the tree
+			for (int indices[2] = {0, 0}; tree.size() && indices[0] < tree.size(); indices[0]++) {
+				for (indices[1] = 0; indices[1] < tree[indices[0]].size(); indices[1]++) {
+					nodes.push_back(tree[indices[0]][indices[1]]);
+				};
 			};
 
 			return nodes;
@@ -212,49 +237,58 @@ class Dungeon {
 		 * Traverse through the dungeons.
 		 *
 		 * @param node (DungeonNode *) - a reference node. By default, the reference is the head.
+		 * @param verbose (bool) - Should the returned output be logged?
 		 * @return vector<int*>
 		 */
-		vector<int> traverse(DungeonNode* node = nullptr) {
+		vector<int> traverse(DungeonNode* node = nullptr, bool verbose = false) {
 			if (!node) {node = this->head; };
 
-			vector<DungeonNode*> nodes = this->traverse(node, true);
+			vector<DungeonNode*> nodes = this->list(node);
 			vector<int> values = {};
 
 			// Convert from nodes to values
 			for (int size = 0; size < nodes.size(); size++) {
-				values.push_back(nodes[size]->data);
+				values.push_back(nodes[size]->getdata());
 			};
 
 			// Sort the values
 			sort(values.begin(), values.end());
+
+			if (verbose) {
+				for (int node_ID = 0; node_ID < values.size(); node_ID++) {
+					cout << values[node_ID] << "|";
+				};
+				cout << endl;
+			};
+
 			return values;
 		};
 
 		/**
 		 * Generate a tree of dungeons.
 		 *
-		 * @param blocked (int) - Should this call consider blocked paths?
+		 * @param start (DungeonNode *) - Which node should this call start with?
 		 * @return vector<vector<DungeonNode*>>
 		 */
-		vector<vector<DungeonNode*>> tree(int blocked = 0) {
+		vector<vector<DungeonNode*>> tree(DungeonNode* start = nullptr) {
+			// Set start to have a value.
+			if (!start) {
+				start = this->head;
+			}
+
 			// The tree
 			vector<vector<DungeonNode*>> tree;
-			if (!(tree.size())) {return tree; }; // If tree is empty, return that, because we can't generate a tree.
+			if (!start) {return tree; }; // If tree is empty, return that, because we can't generate a tree.
 
 			queue<DungeonNode*> order; // Queue of nodes to process
 			queue<int> levels; // What level does it go to?
-			queue<bool> status;
 
-			// Now, place it inside everything, so we can process that having seen it
-			order.push(this->head);
+			// Place it inside
+			order.push(start);
 			levels.push(1);
 
-			if (blocked && (this->head)->getdata() == -1) {status.push(false); // Marked this as blocked
-			} else {status.push(true); // Normally it's true
-			};
-
 			// The level
-			vector<DungeonNode*> level = {this->head};
+			vector<DungeonNode*> level = {start};
 			tree.push_back(level);
 
 			// While the order isn't empty, we deal with it
@@ -264,45 +298,102 @@ class Dungeon {
 				vector<DungeonNode*> children = node->getchildren(); // The children of that node
 
 				// Is the size correct? If not, let's fix it. For example, at `node_level` 1, the size is still 1, so we need to add by 1
-				while (tree.size() < (node_level + 1)) { // Make the size equal to the target
-					level.clear(); // Clear the level
+				while (tree.size() < (node_level + 1)) {
+					level.clear();
 					tree.push_back(level);
 				};
 
 				for (int index = 0; index < children.size(); index++) { // It's chronological so we can assume (hopefully) that the order at which the children are inserted also are
-					DungeonNode *child = children[index]; // Add the children
+					DungeonNode *child = children[index]; // The child
 
-					if (status.front()) {
-						tree[node_level].push_back(child); // Put the child here
-					} else {
-						// Our plan is to replace this as blocked, everything else as blocked, etc.
-						/**
-						 * @todo if it is blocked, then we must find a way so that every other children is blocked
-						 */
-						// We create a "blocked" node as a standin for the child
-					};
+					tree[node_level].push_back(child); // Put that child here
 
 					// Now add this for further processing
-					order.push(node);
+					order.push(child);
 					levels.push(node_level + 1);
 				};
 
 				// Dequeue everything
 				levels.pop();
 				order.pop();
-				status.pop();
 			};
 
 			return tree;
 		};
 
 		/**
-		 * Displays the tree.
-		 * @param verbose (bool) - the verbosity
-		 * @return vector<vector<DungeonNode*>>
+		 * Display the tree.
+		 * @param start (DungeonNode *) - starting node
+		 * @param include_blocked (bool) - Show blocked nodes?
+		 * @param verbose (bool) - Display the nodes in output?
+		 * @return vector<vector<int>>
+		 * @returns the tree’s numerical representation
 		 */
-		vector<vector<DungeonNode*>> tree(bool verbose) {
-			vector<vector<DungeonNode*>> tree = this->tree();
+		vector<vector<int>> displaytree(DungeonNode* start = nullptr, bool include_blocked = true, bool verbose = true) {
+			if (!start) {start = this->head;}
+
+			// The tree
+			vector<vector<int>> tree;
+			if (!start) {return tree; }; // No start, no output
+
+			if (include_blocked) {
+				vector<vector<DungeonNode*>> node_tree = this->tree(start);
+				for (int level[2] = {0, 0}; level[0] < node_tree.size(); level[0]++) {
+					vector<int> contents; // The contents of that level
+					for (level[1] = 0; level[1] < node_tree[level[0]].size(); level[1]++) {
+						contents.push_back(node_tree[level[0]][level[1]]->getdata());
+					};
+					tree.push_back(contents);
+				};
+			} else {
+				// Use a custom variation of that function
+
+				queue<DungeonNode*> order; // Queue of nodes to process
+				queue<int> levels; // What level does it go to?
+				queue<bool> status; // Blocking states
+
+				// Place it inside
+				order.push(start); levels.push(1); status.push(!(start->getblocking()));
+
+				// The level
+				vector<int> level = {start->getdata()};
+				if (!(start->getblocking())) {level[0] = -1;};
+				tree.push_back(level);
+
+				while (!(order.empty())) {
+					DungeonNode* node = order.front(); // The node
+					int node_level = levels.front(); // The current level
+					vector<DungeonNode*> children = node->getchildren(); // The children of that node
+
+					// Correct the size
+					while (tree.size() < (node_level + 1)) {
+						level.clear();
+						tree.push_back(level);
+					};
+
+					for (int index = 0; index < children.size(); index++) {
+						DungeonNode *child = children[index]; // The child
+
+						if (status.front() && !(child->getblocking())) {
+							tree[node_level].push_back(child->getdata()); // Put the child here
+							status.push(true); // Prepare the next blocking state
+						} else {
+							tree[node_level].push_back(-1);
+							status.push(false);
+						};
+
+						// Now add this for further processing
+						order.push(child);
+						levels.push(node_level + 1);
+					};
+
+					// Dequeue everything
+					levels.pop();
+					order.pop();
+					status.pop();
+				};
+			};
+
 
 			if (verbose) {
 				for (int level[2] = {0, 0}; level[0] < tree.size(); level[0]++) {
@@ -375,7 +466,7 @@ class Dungeon {
 		 * @return bool
 		 * @returns Was the data updated successfully?
 		 */
-		void editnode(vector<int> path, int data) {
+		bool editnode(vector<int> path, int data) {
 			DungeonNode *node = this->head;
 			for (int indices[2] = {0, 0}; this->head && path.size() && (indices[0] < path.size()); indices[0]++) {
 				indices[1] = path[indices[0]];
