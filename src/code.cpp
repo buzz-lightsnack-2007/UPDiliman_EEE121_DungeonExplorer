@@ -128,56 +128,41 @@ class Dungeon {
 
 	protected:
 		/**
-		 * The dungeon's depth
-		 * @param node (DungeonNode *) - the node to start with
-		 * @param offset (int) - the offset
-		 * @return int
+		 * Maximum supported levels
+		 * @protected
 		 */
-		int depth(DungeonNode* node, int offset = 0) {
-			vector<DungeonNode*> children = node->getchildren();
-
-			// If no children, that's it
-			if (children.empty()) {return offset; };
-
-			/**
-			 * The depth results. Which one is higher?
-			 */
-			vector<int> results;
-
-			// Else, for each children…
-			for (int side = 0; side < children.size(); side++) {
-				// We recursively attempt to find the maximum depth there
-				DungeonNode* child = children[side];
-				results.push_back(this->depth(child, offset + 1));
-			};
-
-			return *(max_element(results.begin(), results.end()));
-		};
-
+		int levels;
+		
 	public:
 		/**
 		 * Start a dungeon.
 		 *
 		 * @param headvalue (int) the head value
 		 * @param maxchild (int) the maximum child size
+		 * @param max_level (int) the maximum supported levels
 		 */
-		Dungeon(int headvalue, int maxchild) {
+		Dungeon(int headvalue, int maxchild, int max_level) {
 			// Create a new dungeon node for this.
 			this->head = new DungeonNode(headvalue, maxchild);
 
 			// Set all other configuration
 			this->maxchild = maxchild;
+			this->levels = max_level; 
 		};
 
 		/**
 		 * Start a dungeon from an entry point.
-		 * The dimensions will be inferred from the provided head node.
 		 *
 		 * @param dungeon (DungeonNode *) - the dungeon node
+		 * @param max_children (int) - the maximum child size
+		 * @param max_levels (int) the maximum supported levels
 		 */
-		Dungeon(DungeonNode* dungeon) {
+		Dungeon(DungeonNode* dungeon, int max_children, int max_level) {
 			this->head = dungeon;
-			this->maxchild = dungeon->maxchild;
+			
+			// Set all other configuration - note that they can't be inferred from the dungeon, because the attribs are private
+			this->maxchild = max_children;
+			this->levels = max_level; 
 		};
 
 		/**
