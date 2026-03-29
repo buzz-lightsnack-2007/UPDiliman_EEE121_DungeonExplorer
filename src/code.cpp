@@ -514,11 +514,11 @@ class Dungeon {
 
 		vector <int> getnodelist(DungeonNode* node, vector <int> temp, int currdepth, int depthtoget){
 			if(depthtoget == currdepth){
-				temp.push_back(node->data); // Push back the current node's data
+				temp.push_back(node->getdata()); // Push back the current node's data
 			}
 			for(int i = 0; i < (node->getchildren()).size(); i++){
 				if (node->getchildren(i)) { // For each children
-					temp = this->getnodelist(node->children[i], temp, currdepth + 1, depthtoget);
+					temp = this->getnodelist(node->getchildren(i), temp, currdepth + 1, depthtoget);
 				};
 			};
 			return temp;
