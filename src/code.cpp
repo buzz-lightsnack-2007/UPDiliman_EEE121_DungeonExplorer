@@ -3,6 +3,7 @@
 # include <queue>
 # include <stack>
 # include <algorithm>
+# include <map>
 
 using namespace std;
 
@@ -330,6 +331,31 @@ class Dungeon {
 		};
 
 		/**
+		 * Get each path and its total. 
+		 * 
+		 * @param start (DungeonNode*) - the starting node
+		 * @param include_blocked (bool) - whether to include blocked nodes (default: false)
+		 * @return map<vector<DungeonNode*>, int>
+		 * @returns Keys are the paths, the values are the totals. 
+		 */
+		map<vector<DungeonNode*>, int> scores(DungeonNode* start = nullptr, bool include_blocked = false) {
+			vector<vector<DungeonNode*> > paths = this->paths(start, include_blocked);
+			map<vector<DungeonNode*>, int> scores; 
+
+			for (int path_ID = 0; path_ID < paths.size(); path_ID++) {
+				vector<DungeonNode*> path = paths[path_ID]; 
+				int sum = 0; 
+				for (int step = 0; step < path.size(); step++) {
+					sum += path[step]->getdata(); 
+				};
+
+				scores[path] = sum; 
+			};
+
+			return scores;
+		};
+
+		/**
 		 * Find the path to a node. 
 		 * 
 		 * @param query (DungeonNode *) - The search query
@@ -544,15 +570,33 @@ class Dungeon {
 		};
 		
 		/**
-		 * Find the path to the extrema (maximum or minimum) value. 
+		 * Find the path that accumulates to the extrema (maximum or minimum) value. 
 		 * @param type (int) - 1 for maxima, -1 for minima
 		 * @param include_blocked (bool) - Should blocked nodes be considered? (default: false)
 		 * @return vector<DungeonNode*>
 		 * @returns the path to the node with the extrema value
 		 */
 		vector<DungeonNode*> extrema_path(int type, bool include_blocked = false) {
-			DungeonNode* extrema = this->extrema(type, include_blocked); 
-			return this->find(extrema, true); 
+			vector<DungeonNode*> extreme; // The result
+			if (!type) {return extreme; }; 
+
+			map<vector<DungeonNode*>, int> scores = this->scores(nullptr, include_blocked); // The scores
+			vector<vector<DungeonNode*> > paths = this->paths(nullptr, include_blocked); // The list of nodes
+			
+			if (!(paths.size())) {return extreme; };
+			extreme = paths[0];
+			int extrema = scores[paths[0]]; // The extrema
+			
+			for (int path_ID = 0; path_ID < paths.size(); path_ID++) {
+				vector<DungeonNode*> path = paths[path_ID]; // The selected path
+				
+				if ((type < 0 && scores[path] < extrema) || (type > 0 && scores[path] > extrema)) {
+					extreme = path; 
+					extrema = scores[path]; 
+				};
+			};
+
+			return extreme;
 		};
 
 		/**
@@ -605,6 +649,20 @@ class Dungeon {
 
 			// Base case is to return false
 			return false;
+		};
+
+		/**
+		 * Navigate to the path that accumulates to the extrema (maximum or minimum) value. 
+		 * @return vector<int>
+		 * @returns the path to the node with the extrema value
+		 */
+		vector<int> bestpath() {
+			vector<DungeonNode*> path = this->extrema_path(1); 
+			vector<int> directions; 
+
+			if (!(path.size())) {return directions; }
+			DungeonNode *node = path.back(); 
+			return this->navigate(node); 
 		};
 
 		int findmaxvalue(DungeonNode* node, int maxholdervalue);
