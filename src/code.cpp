@@ -1,6 +1,7 @@
 # include <iostream>
 # include <vector>
 # include <queue>
+# include <stack>
 # include <algorithm>
 
 using namespace std;
@@ -214,19 +215,22 @@ class Dungeon {
 		 * List all nodes.
 		 *
 		 * @param node (DungeonNode *) - a reference node
+		 * @param include_blocked (bool) - whether to include blocked nodes (default: true)
 		 * @return vector<DungeonNode*>
 		 */
-		vector<DungeonNode*> list(DungeonNode* node = nullptr) {
+		vector<DungeonNode*> list(DungeonNode* node = nullptr, bool include_blocked = true) {
 			// The collected nodes
 			vector<DungeonNode*> nodes;
 
 			// We will use the tree to generate the list.
-			vector<vector<DungeonNode*> > tree = this->tree(node);
+			vector<vector<DungeonNode*> > tree = this->tree(node, include_blocked);
 
 			// Iterate through the tree
 			for (int indices[2] = {0, 0}; tree.size() && indices[0] < tree.size(); indices[0]++) {
 				for (indices[1] = 0; indices[1] < tree[indices[0]].size(); indices[1]++) {
-					nodes.push_back(tree[indices[0]][indices[1]]);
+					if (tree[indices[0]][indices[1]]) {
+						nodes.push_back(tree[indices[0]][indices[1]]);
+					};
 				};
 			};
 
@@ -262,6 +266,115 @@ class Dungeon {
 			};
 
 			return values;
+		};
+
+		/**
+		 * Calculates all possible paths from the head node to every other node. This function performs a DFS traversal of the tree starting from the head node to identify all unique paths. 
+		 * @param start (DungeonNode*) - the starting node
+		 * @param include_blocked (bool) - whether to include blocked nodes (default: false)
+		 * @return vector<vector<DungeonNode*>>
+		 * @returns Each inner vector represents a path from the head node to a specific node in the tree. 
+		 */
+		vector<vector<DungeonNode*> > paths(DungeonNode* start = nullptr, bool include_blocked = false) {
+			if (!start) {start = this->head;}; 
+			
+			// The paths
+			vector<vector<DungeonNode*> > paths;
+			if (!start) {return paths;};
+			
+			stack<DungeonNode*> order; // the stack of nodes to process
+			stack<vector<DungeonNode*> > parents; // the stack of parents
+
+			if (!include_blocked && start->getblocking()) {return paths;};
+
+			// The path
+			vector<DungeonNode*> path; 
+
+			// The parents
+			vector<DungeonNode*> parent; 
+			order.push(start); 
+			parents.push(parent); 
+
+			path.push_back(start);
+			paths.push_back(path); // Include in the combinations
+
+			while (order.size() && parents.size()) {
+				DungeonNode* node = order.top(); 
+				parent.clear(); 
+
+				for (int size = 0; size < parents.top().size(); size++) {
+					parent.push_back(parents.top()[size]); 
+				};
+				parent.push_back(node); // Now the current node is a parent - of its children. 
+
+				parents.pop(); order.pop(); // Prepare for replacement
+
+				for (int side = 0; side < node->getchildren().size(); side++) {
+					DungeonNode* child = node->getchildren(side); 
+					
+					if (!include_blocked && child->getblocking()) {continue;}; // If blocked and not including it, skip it. 
+					path.clear(); // Reset the path
+					
+					for (int size = 0; size < parent.size(); size++) {
+						path.push_back(parent[size]); 
+					};
+					path.push_back(child); 
+					paths.push_back(path); 
+
+					order.push(child); 
+					parents.push(parent); 
+				};
+			};
+
+			return paths; 
+		};
+
+		/**
+		 * Find the path to a node. 
+		 * 
+		 * @param query (DungeonNode *) - The search query
+		 * @param include_blocked (bool) - whether to include blocked nodes (default: false)
+		 * @return vector<DungeonNode *>
+		 * @returns the path to the node, including the node itself. If not found, an empty vector is returned. 
+		 */
+		vector<DungeonNode*> find(DungeonNode* query, bool include_blocked = false) {
+			vector<vector<DungeonNode*> > paths = this->paths(nullptr, include_blocked);
+			vector<DungeonNode*> path;
+
+			for (int index[2] = {0, 0}; index[0] < paths.size() && path.empty(); index[0]++) {
+				path.clear(); 
+				for (index[1] = 0; paths[index[0]].back() == query && index[1] < paths[index[0]].size(); index[1]++) {
+					path.push_back(paths[index[0]][index[1]]); 
+				}; 
+			};
+			
+			return path; 
+		};
+
+		/**
+		 * Find the indices to the path of a node. 
+		 *
+		 * @param query (DungeonNode *) - The search query
+		 * @param include_blocked (bool) - whether to include blocked nodes (default: false)
+		 * @return vector<int>
+		 * @returns the path to the node, including the node itself. If not found, an empty vector is returned. 
+		 */
+		vector<int> navigate(DungeonNode* query, bool include_blocked = false) {
+			vector<DungeonNode*> path = this->find(query, include_blocked);
+			vector<int> indices;
+			
+			for (int step = 0; step < path.size() - 1; step++) {
+				DungeonNode *parent = path[step]; 
+				
+				for (int side = 0; side < parent->getchildren().size(); side++) {
+					if (parent->getchildren(side) == path[step + 1]) {
+						indices.push_back(side); 
+						break; 
+					};
+				};
+			};
+			
+			return indices; 
 		};
 
 		/**
@@ -349,27 +462,27 @@ class Dungeon {
 			if (!start) {return tree; }; // No start, no output
 
 			vector<vector<DungeonNode*> > node_tree = this->tree(start, include_blocked);
-				for (int level[2] = {0, 0}; level[0] < node_tree.size(); level[0]++) {
-					vector<int> contents; // The contents of that level
-					for (level[1] = 0; level[1] < node_tree[level[0]].size(); level[1]++) {
+			for (int level[2] = {0, 0}; level[0] < node_tree.size(); level[0]++) {
+				vector<int> contents; // The contents of that level
+				for (level[1] = 0; level[1] < node_tree[level[0]].size(); level[1]++) {
 					DungeonNode *node = node_tree[level[0]][level[1]]; 
 					if (node) {
 						contents.push_back(node->getdata());
-			} else {
+					} else {
 						contents.push_back(-1);
 					};
-					};
+				};
 				tree.push_back(contents);
-						};
+			};
 
 
 			for (int level[2] = {0, 0}; verbose && level[0] < tree.size(); level[0]++) {
-					for (level[1] = 0; level[1] < tree[level[0]].size(); level[1]++) {
-						cout << tree[level[0]][level[1]] << "|";
-					};
-					cout << endl;
+				for (level[1] = 0; level[1] < tree[level[0]].size(); level[1]++) {
+					cout << tree[level[0]][level[1]] << "|";
+				};
+				cout << endl;
 			};
-
+			
 			return tree;
 		};
 
@@ -412,11 +525,12 @@ class Dungeon {
 		/**
 		 * Get the node with the extrema (maximum or minimum) value.
 		 * @param type (int) - 1 for maxima, -1 for minima
+		 * @param include_blocked (bool) - Should blocked nodes be considered? (default: false)
 		 * @return DungeonNode*
 		 * @returns the node with the extrema value
 		 */
-		DungeonNode* extrema(int type) {
-			vector<DungeonNode*> list = this->list(); // The list of nodes
+		DungeonNode* extrema(int type, bool include_blocked = false) {
+			vector<DungeonNode*> list = this->list(nullptr, include_blocked); // The list of nodes
 			if (list.empty() || type == 0) {return nullptr;};
 
 			DungeonNode* leaderboard = list[0];
@@ -428,6 +542,40 @@ class Dungeon {
 
 			return leaderboard;
 		};
+		
+		/**
+		 * Find the path to the extrema (maximum or minimum) value. 
+		 * @param type (int) - 1 for maxima, -1 for minima
+		 * @param include_blocked (bool) - Should blocked nodes be considered? (default: false)
+		 * @return vector<DungeonNode*>
+		 * @returns the path to the node with the extrema value
+		 */
+		vector<DungeonNode*> extrema_path(int type, bool include_blocked = false) {
+			DungeonNode* extrema = this->extrema(type, include_blocked); 
+			return this->find(extrema, true); 
+		};
+
+		/**
+		 * Find navigated path to the extrema (maximum or minimum) value. 
+		 * @param type (int) - 1 for maxima, -1 for minima
+		 * @param include_blocked (bool) - Should blocked nodes be considered? (default: false)
+		 * @return vector<int>
+		 * @returns the navigated path to the node with the extrema value
+		 */
+		vector<int> extrema_navigation(int type, bool include_blocked = false) {
+			DungeonNode* extrema = this->extrema(type, include_blocked); 
+			return this->navigate(extrema, true); 
+		};
+
+		/**
+		 * Find the largest treasure. Alias of extrema_navigation(1, false). 
+		 * 
+		 * @returns vector<int>
+		 * @returns the navigated path to the node with the maximum value
+		 */
+		vector<int> largesttreasure() {
+			return this->extrema_navigation(1); 
+		}; 
 
 		/**
 		 * Edit a node.
