@@ -10,7 +10,7 @@ using namespace std;
 class DungeonNode {
 	private:
 		int data;
-		int maxchild;
+		int maxchild = -1;
 
 		/**
 		 * The connected dungeons; size restricted by maxchild
@@ -61,6 +61,39 @@ class DungeonNode {
 		 */
 		vector<DungeonNode*> getchildren() {
 			return this->children;
+		};
+
+		/**
+		 * Add a child to this node. 
+		 * 
+		 * @param child (DungeonNode *) - the child node to append
+		 * @return bool
+		 * @returns whether or not the child was inserted successfully
+		 */
+		bool appendchildren(DungeonNode* child) {
+			if (this->maxchild < 0 || (this->children.size() < this->maxchild)) {
+				this->children.push_back(child); 
+				return true; 
+			};
+
+			return false; 
+		};
+
+		/**
+		 * Add children to this node. 
+		 * 
+		 * @param children (vector<DungeonNode *>) - the children to append
+		 * @return vector<bool>
+		 * @returns the insertion results for each child
+		 */
+		vector<bool> appendchildren(vector<DungeonNode*> children) {
+			vector<bool> results; 
+
+			for (int child = 0; child < children.size(); child++) {
+				results.push_back(this->appendchildren(children[child]));
+			};
+
+			return results;
 		};
 
 		/**
@@ -133,6 +166,34 @@ class Dungeon {
 		 */
 		int levels;
 		
+		
+		/**
+		 * Create a dungeon recursively. The deepest and leftmost dungeons are created first.
+		 * 
+		 * @param parent (DungeonNode *) - the parent
+		 * @param depth (int) - the current depth
+		 * @param to_insert (DungeonNode *) - the node to insert
+		 * @return bool
+		 * @returns whether or not the node was inserted
+		 */
+		bool insertcell(DungeonNode* parent, int depth, DungeonNode* to_insert) {
+			bool insertable = false; // A node is insertable to a parent if 1) it has no children or 2) it has a next available spot. These are checked after reaching the lowest possible depth, where 1) is checked first then by 2) if not satisfied. 
+			if (depth >= this->getdepth()) {return insertable; } // Can't insert here
+
+			// If it has children…
+			for (int child_ID = 0; !insertable && (child_ID < parent->getchildren().size()); child_ID++) {
+				// Go deeper first
+				DungeonNode *child = parent->getchildren(child_ID); 
+				insertable = this->insertcell(child, depth + 1, to_insert); 
+			};
+			
+			// If it doesn't have children, or all of its children are already occupied…
+			if (!insertable && parent->getchildren().size() < this->maxchild) {
+				insertable = parent->appendchildren(to_insert); // We have to accomodate for how many children it supports
+			};
+			
+			return insertable; 
+		};
 	public:
 		/**
 		 * Start a dungeon.
@@ -166,26 +227,33 @@ class Dungeon {
 		};
 
 		/**
-		 * Start a dungeon from an entry point.
+		 * Create a dungeon node instance and insert it into the dungeon instance. The deepest and leftmost dungeons are created first.
 		 *
-		 * @param dungeon (DungeonNode *) - the dungeon node
-		 * @param dimensions (int) - the maximum child size
+		 * @param data (int) - the data
+		 * @param maxchild (int) - the maximum children supported by this node (default: as configured in the instance)
+		 * @return DungeonNode*
+		 * @returns the dungeon node instance 
 		 */
-		Dungeon(DungeonNode* dungeon, int dimensions) {
-			this->head = dungeon;
-			this->maxchild = dimensions;
+		DungeonNode* insertcell(int data, int maxchild = 0) {
+			if (maxchild <= 0) {
+				maxchild = this->maxchild; 
+			}
+			
+			DungeonNode* node = new DungeonNode(data, maxchild); 
+			this->insertcell(node);
+			return node; 
 		};
-
+		
 		/**
 		 * Create a dungeon. The deepest and leftmost dungeons are created first.
 		 *
-		 * @param data -
-		 * @param depth
-		 * @param done
-		 * @param node
+		 * @param node (DungeonNode *) - the node to insert
 		 * @return int
 		 */
-		int insertcell(int data, int depth, int done, DungeonNode* node) {
+		bool insertcell(DungeonNode* node) {
+			if (!(this->head)) {return false;}; 
+			
+			return this->insertcell(this->head, 0, node);  
 		};
 
 		/**
@@ -523,15 +591,22 @@ class Dungeon {
 		int getsize() {
 			return this->size;
 		};
-
+		
 		/**
-		 * The dungeon's depth
-		 * @param offset (int) - the offset
+		 * The configured depth of the node
 		 * @return int
 		 */
-		int depth(int offset = 0) {
-			return this->depth(this->head, offset);
-		};
+		int getdepth() {
+			return this->levels - 1; 
+		}; 
+		
+		/**
+		 * The configured levels of the node
+		 * @return int
+		 */
+		int getlevels() {
+			return this->levels; 
+		}; 
 
 		/**
 		 * Get the node with the extrema (maximum or minimum) value.
