@@ -731,6 +731,65 @@ class Dungeon {
 		vector <int> findbestpath(DungeonNode* node, vector <int> temp, int maxvalue, vector <int> holder, int currentsum);
 };
 
+class Interface {
+	public: 
+		int L; // the maximum level
+		int N; // the maximum child size
+		vector<int> tasks; // tasks
+		Dungeon *dungeon; // the dungeon
+	
+		/**
+		 * Create an interface. 
+		 */
+		Interface() {}
+		
+		
+		/**
+		 * Create an interface with an existing dungeon. 
+		 * 
+		 * @param dungeon (Dungeon *) - the dungeon to use
+		 */
+		Interface(Dungeon* dungeon) {
+			this->dungeon = dungeon; 
+		}
+		
+		/**
+		 * Create an interface with data. 
+		 *
+		 * @param L (int) - the maximum level
+		 * @param N (int) - the maximum child size
+		 * @param tasks (vector<int>) - the tasks 
+		 * @param dungeon (Dungeon *) - the dungeon to import
+		 */
+		Interface(int L, int N, vector<int> tasks, Dungeon* dungeon = nullptr) {
+			this->L = L; 
+			this->N = N; 
+			this->tasks = tasks; 
+		}; 
+		
+		/**
+		 * Receive commands from input. 
+		 * @param verbose (bool) - Controls the appearance of prompts
+		 */
+		input(bool verbose) {
+			if (verbose) {cout << "L: "}; 
+			cin >> this->L; 
+			
+			if (verbose) {cout << "N: "}; 
+			cin >> this->N; 
+		};
+		
+		/**
+		 * Execute following the specified command. 
+		 */
+}
+
 int main() {
+	int n; 
+	int l; 
+	int root_value; 
+	int tasks; 
+	int mode; 
+	Dungeon dungeon(0, n, l);  
 
 };
