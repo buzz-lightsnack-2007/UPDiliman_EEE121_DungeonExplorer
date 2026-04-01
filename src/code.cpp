@@ -1,4 +1,6 @@
+# include <cstdlib>
 # include <iostream>
+# include <cmath>
 # include <vector>
 # include <queue>
 # include <stack>
@@ -730,10 +732,67 @@ class Dungeon {
 		vector <int> findbestpath(DungeonNode* node, vector <int> temp, int maxvalue, vector <int> holder, int currentsum);
 };
 
+
+/**
+ * Extract integers from an input string. Delimiters include ',' and ';' and can’t be customised. 
+ * 
+ * @param entry (string) - the input string
+ * @return vector<int>
+ * @returns the input integers
+ */
+vector<int> get_numbers(string entry) {
+	vector<int> numbers; // The return value
+	vector<int> positive; // Tells whether a number in numbers is positive or negative
+	
+	map<char, bool> handling = {
+		{'-', true} // Only allowed before any digit after the comma
+	}; 
+	
+	for (int indices[2] = {0, 0}; indices[0] < entry.size(); indices[0]++) {
+		while (numbers.size() <= indices[1]) {
+			numbers.push_back(0); 
+		};
+		while (positive.size() <= indices[1]) {
+			positive.push_back(true); 
+		};
+		
+		char character = entry[indices[0]]; // the selected character
+		int characterID = character; // the character ID
+		
+		if (48 <= characterID && characterID <= (48 + 9)) {
+			handling['-'] = false; 
+			
+			// Forget all processing we did and add the number
+			numbers[indices[1]] = abs(numbers[indices[1]]) * 10 + (characterID - 48);
+			
+			// Process it again
+			if (!(positive[indices[1]])) {
+				numbers[indices[1]] = 0 - numbers[indices[1]]; 
+			};
+		} else {
+			switch (character) {
+				case ',': 
+				case ';': 
+					// Done with the number. Process it. 
+					handling['-'] = true; 
+					indices[1]++; 
+				case '-':
+					if (handling['-']) {
+						positive[indices[1]] = !(positive[indices[1]]); // Negate it
+						break; 
+					};
+			}; 
+		}; 
+	}; 
+	
+	return numbers;
+}; 
+
 class Interface {
 	public: 
 		int L; // the maximum level
 		int N; // the maximum child size
+		vector<int> nodes; // the requested nodes for insertion
 		vector<int> tasks; // tasks
 		Dungeon *dungeon; // the dungeon
 	
