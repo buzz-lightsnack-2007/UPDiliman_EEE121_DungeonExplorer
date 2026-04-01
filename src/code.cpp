@@ -277,7 +277,7 @@ class Dungeon {
 			vector<DungeonNode*> nodes;
 
 			// We will use the tree to generate the list.
-			vector<vector<DungeonNode*> > tree = this->tree(node, include_blocked);
+			vector<vector<DungeonNode*> > tree = this->tree(include_blocked, node);
 
 			// Iterate through the tree
 			for (int indices[2] = {0, 0}; tree.size() && indices[0] < tree.size(); indices[0]++) {
@@ -298,7 +298,7 @@ class Dungeon {
 		 * @param verbose (bool) - Should the returned output be logged?
 		 * @return vector<int*>
 		 */
-		vector<int> traverse(DungeonNode* node = nullptr, bool verbose = false) {
+		vector<int> traverse(DungeonNode* node = nullptr, bool verbose = true) {
 			if (!node) {node = this->head; };
 
 			vector<DungeonNode*> nodes = this->list(node);
@@ -464,7 +464,7 @@ class Dungeon {
 		 * @return vector<vector<DungeonNode*>>
 		 * @returns the tree of dungeons. If blocked nodes aren’t included, they’re represented as null pointers. 
 		 */
-		vector<vector<DungeonNode*> > tree(DungeonNode* start = nullptr, bool include_blocked = true) {
+		vector<vector<DungeonNode*> > tree(bool include_blocked = true, DungeonNode* start = nullptr) {
 			// Set start to have a value.
 			if (!start) {
 				start = this->head;
@@ -533,14 +533,14 @@ class Dungeon {
 		 * @return vector<vector<int>>
 		 * @returns the tree’s numerical representation
 		 */
-		vector<vector<int> > displaytree(DungeonNode* start = nullptr, bool include_blocked = true, bool verbose = true) {
+		vector<vector<int> > displaytree(bool include_blocked = true, DungeonNode* start = nullptr, bool verbose = true) {
 			if (!start) {start = this->head;}
 
 			// The tree
 			vector<vector<int> > tree;
 			if (!start) {return tree; }; // No start, no output
 
-			vector<vector<DungeonNode*> > node_tree = this->tree(start, include_blocked);
+			vector<vector<DungeonNode*> > node_tree = this->tree(include_blocked, start);
 			for (int level[2] = {0, 0}; level[0] < node_tree.size(); level[0]++) {
 				vector<int> contents; // The contents of that level
 				for (level[1] = 0; level[1] < node_tree[level[0]].size(); level[1]++) {
@@ -553,7 +553,6 @@ class Dungeon {
 				};
 				tree.push_back(contents);
 			};
-
 
 			for (int level[2] = {0, 0}; verbose && level[0] < tree.size(); level[0]++) {
 				for (level[1] = 0; level[1] < tree[level[0]].size(); level[1]++) {
