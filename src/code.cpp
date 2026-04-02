@@ -580,11 +580,21 @@ class Dungeon {
 			return temp;
 		};
 
-		vector <int> getnodelisthelper(DungeonNode* node, vector <int> temp, int maxdepth){
+		vector <int> getnodelisthelper(DungeonNode* node = nullptr, vector<int>* temp = nullptr, int maxdepth = 0){
+			if (!node) {
+				node = this->head; 
+			};
+			if (!temp) {
+				temp = new vector<int>; 
+			}; 
+			if (maxdepth <= 0 || maxdepth > this->levels - 1) {
+				maxdepth = this->levels - 1;
+			};
+
 			for(int i = 0; i <= maxdepth; i++) {
-				temp = getnodelist(node, temp, 0, i); // Merge the provided vector for each depth
-			}
-    		return temp;
+				*temp = this->getnodelist(node, *(temp), 0, i); // Merge the provided vector for each depth
+			}; 
+    		return *temp;
 		};
 
 		/**
@@ -927,6 +937,13 @@ class Interface {
 					
 					// switch for different tasks
 					switch ((this->tasks)[task]) {
+case 0: 
+							path = this->dungeon->getnodelisthelper(); // Not really the path, but because this is the output format…
+							for (int node_ID = 0; node_ID < path.size(); node_ID++) {
+								cout << path[node_ID] << "|"; 
+							}; 
+							cout << endl; 
+							break; 
 						case 1: 
 							this->dungeon->traverse(); 
 							break; 
