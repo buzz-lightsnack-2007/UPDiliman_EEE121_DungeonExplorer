@@ -498,6 +498,7 @@ class Dungeon {
 				int node_level = levels.front(); // The current level
 				vector<DungeonNode*> children = node->getchildren(); // The children of that node
 
+				if (children.size()) { // Perform the processing only when there’s children
 				// Is the size correct? If not, let's fix it. For example, at `node_level` 1, the size is still 1, so we need to add by 1
 				while (tree.size() < (node_level + 1)) {
 					level.clear();
@@ -519,6 +520,7 @@ class Dungeon {
 					order.push(child);
 					levels.push(node_level + 1);
 				};
+				}
 
 				// Dequeue everything
 				levels.pop(); order.pop(); status.pop();
