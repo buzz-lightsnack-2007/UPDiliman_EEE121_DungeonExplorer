@@ -1,3 +1,4 @@
+#include <cstddef>
 # include <cstdlib>
 # include <iostream>
 # include <cmath>
@@ -499,27 +500,27 @@ class Dungeon {
 				vector<DungeonNode*> children = node->getchildren(); // The children of that node
 
 				if (children.size()) { // Perform the processing only when there’s children
-				// Is the size correct? If not, let's fix it. For example, at `node_level` 1, the size is still 1, so we need to add by 1
-				while (tree.size() < (node_level + 1)) {
-					level.clear();
-					tree.push_back(level);
-				};
-
-				for (int index = 0; index < children.size(); index++) { // It's chronological so we can assume (hopefully) that the order at which the children are inserted also are
-					DungeonNode *child = children[index]; // The child
-
-					if (include_blocked || (status.front() && !(child->getblocking()))) {
-						tree[node_level].push_back(child); // Put the child here
-						status.push(true); // Prepare the next blocking state
-					} else {
-						tree[node_level].push_back(nullptr);
-						status.push(false);
+					// Is the size correct? If not, let's fix it. For example, at `node_level` 1, the size is still 1, so we need to add by 1
+					while (tree.size() < (node_level + 1)) {
+						level.clear();
+						tree.push_back(level);
 					};
-
-					// Now add this for further processing
-					order.push(child);
-					levels.push(node_level + 1);
-				};
+	
+					for (int index = 0; index < children.size(); index++) { // It's chronological so we can assume (hopefully) that the order at which the children are inserted also are
+						DungeonNode *child = children[index]; // The child
+	
+						if (include_blocked || (status.front() && !(child->getblocking()))) {
+							tree[node_level].push_back(child); // Put the child here
+							status.push(true); // Prepare the next blocking state
+						} else {
+							tree[node_level].push_back(nullptr);
+							status.push(false);
+						};
+						
+						// Now add this for further processing
+						order.push(child);
+						levels.push(node_level + 1);
+					};
 				}
 
 				// Dequeue everything
@@ -758,7 +759,6 @@ vector<int> get_numbers(string entry) {
 	
 	map<char, bool> handling; 
 	handling['-'] = true; // Only allowed before any digit, after a comma
-	handling['.'] = true; // Only allowed once
 	
 	for (int indices[2] = {0, 0}; indices[0] < entry.size(); indices[0]++) {
 		while (numbers.size() <= indices[1]) {
@@ -788,6 +788,7 @@ vector<int> get_numbers(string entry) {
 					// Done with the number. Process it. 
 					handling['-'] = true; 
 					indices[1]++; 
+					break; 
 				case '-':
 					if (handling['-']) {
 						positive[indices[1]] = !(positive[indices[1]]); // Negate it
@@ -921,11 +922,32 @@ class Interface {
 			
 			return tasks; 
 		}; 
+
+		bool update(bool verbose = false) {
+			string entry; // User input
+			
+			vector<int> path; // The navigation to a certain node
+			int value; // The value to update to
+
+			if (verbose) { // Display help
+				cout << "\033[1m\033[4m" << "Update a node" << "\033[0m" << endl << "\033[1m" << "Node" << "\033[0m\t" << ": "; 
+			};
+			cin >> entry; 
+			path = get_numbers(entry); 
+			
+			if (verbose) {
+				cout << "\033[1m" << "Value" << "\033[0m\t" << ": "; 
+			};
+			cin >> value; 
+			return this->dungeon->editnode(path, value); 
+		}; 
 		
 		/**
 		 * Execute following the specified commands. 
+		 * 
+		 * @param verbose (bool) - Controls the verbosity
 		 */
-		void execute() {
+		void execute(bool verbose = false) {
 			// Here are some variables that may be needed in the switch case statement. Initialising them inside seems to break it. 
 			
 			vector<DungeonNode*> nodes; // A collection if nodes
@@ -937,7 +959,7 @@ class Interface {
 					
 					// switch for different tasks
 					switch ((this->tasks)[task]) {
-case 0: 
+						case 0: 
 							path = this->dungeon->getnodelisthelper(); // Not really the path, but because this is the output format…
 							for (int node_ID = 0; node_ID < path.size(); node_ID++) {
 								cout << path[node_ID] << "|"; 
@@ -949,6 +971,9 @@ case 0:
 							break; 
 						case 2: 
 							this->dungeon->displaytree(); 
+							break; 
+						case 3: 
+							this->update(verbose); 
 							break; 
 						case 4: 
 							this->dungeon->displaytree(false); 
@@ -985,7 +1010,7 @@ case 0:
 int main() {
 	Interface testing; 
 	if (testing.configure(false, true)) {
-		testing.query(true); 
+		testing.query(false); 
 		testing.execute(); 
 	} 
 };
