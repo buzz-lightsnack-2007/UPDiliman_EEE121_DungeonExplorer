@@ -73,3 +73,6 @@ Testing/
 
 # instructions
 *.pdf
+
+# VSCode configuration
+.vscode/
