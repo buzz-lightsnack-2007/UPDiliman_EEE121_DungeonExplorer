@@ -744,9 +744,9 @@ vector<int> get_numbers(string entry) {
 	vector<int> numbers; // The return value
 	vector<int> positive; // Tells whether a number in numbers is positive or negative
 	
-	map<char, bool> handling = {
-		{'-', true} // Only allowed before any digit after the comma
-	}; 
+	map<char, bool> handling; 
+	handling['-'] = true; // Only allowed before any digit, after a comma
+	handling['.'] = true; // Only allowed once
 	
 	for (int indices[2] = {0, 0}; indices[0] < entry.size(); indices[0]++) {
 		while (numbers.size() <= indices[1]) {
@@ -823,31 +823,150 @@ class Interface {
 			this->L = L; 
 			this->N = N; 
 			this->tasks = tasks; 
+			this->dungeon = dungeon; 
 		}; 
 		
 		/**
-		 * Receive commands from input. 
-		 * @param verbose (bool) - Controls the appearance of prompts
+		 * Initialise the dungeon. 
+		 * This method will use the attributes, such as that set in configure(). Note that the existing instance will be dropped but not removed from memory. 
+		 * 
+		 * @return Dungeon*
+		 * @returns The dungeon instance
 		 */
-		input(bool verbose) {
-			if (verbose) {cout << "L: "}; 
-			cin >> this->L; 
+		Dungeon* initialize() {
+			if (!(this->nodes.size())) {
+				return nullptr; // Needs a head pointer
+			};
 			
-			if (verbose) {cout << "N: "}; 
-			cin >> this->N; 
+			this->dungeon = new Dungeon((this->nodes)[0], this->N, this->L); 
+			for (int node = 1; node < (this->nodes).size(); node++) {
+				this->dungeon->insertcell((this->nodes)[node]); 
+			};
+			
+			return this->dungeon; 
 		};
 		
 		/**
-		 * Execute following the specified command. 
+		 * Receive configuration commands from input. 
+		 * @param verbose (bool) - Controls the appearance of prompts
+		 * @param initialise (bool) - Run initialisation automatically after configuration? 
 		 */
-}
+		Dungeon* configure(bool verbose, bool initialise = false) {
+			if (verbose) {cout << "\033[1m"<< "L" << "\033[0m\t" << ": ";}; 
+			cin >> this->L; 
+			
+			if (verbose) {cout << "\033[1m"<< "N" << "\033[0m\t" << ": ";}; 
+			cin >> this->N; 
+			
+			if (verbose) {cout << "\033[1m"<< "Nodes" << "\033[0m\t" << ": ";}; 
+			string nodes_entry; 
+			cin >> nodes_entry; 
+			this->nodes = get_numbers(nodes_entry); 
+			
+			this->L = abs(this->L); 
+			this->N = abs(this->N); 
+			
+			if (initialise) {
+				if (verbose) {cout << "Initialization \033[1m";};
+				Dungeon* status = this->initialize(); 
+				
+				if (verbose) {
+					if (status) {
+						cout << "\033[32m"; 
+					} else {
+						cout << "\033[31mun"; 
+					}; 
+					cout << "successful." << "\033[0m" << endl; 
+				};
+				return status; 
+			}; 
+			if (verbose) {cout << "Initialization " << "\033[1m\033[31m" << "unsuccessful" << "\033[0m" << "." << endl; };
+			return nullptr; 
+		};
+		
+		/**
+		 * Query for user commands. 
+		 * 
+		 * @param verbose (bool) - Controls the appearance of prompts 
+		 */
+		vector<int> query(bool verbose) {
+			int size; // the intended size
+			if (verbose) {cout << "\033[1m"<< "Tasks" << "\033[0m\t" << ": ";}; 
+			
+			cin >> size; 
+			size = abs(size); 
+			
+			vector<int> tasks; 
+			for (int entry; tasks.size() < size; this->tasks = tasks) {
+				if (verbose) {cout << "\t"<< "" << (tasks.size() + 1) << ".\033[0m\t";};
+				cin >> entry; 
+				entry = abs(entry); 
+				
+				if (0 <= entry && entry <= 6) {
+					tasks.push_back(entry); // Add this entry
+				};
+			}; 
+			
+			return tasks; 
+		}; 
+		
+		/**
+		 * Execute following the specified commands. 
+		 */
+		void execute() {
+			// Here are some variables that may be needed in the switch case statement. Initialising them inside seems to break it. 
+			
+			vector<DungeonNode*> nodes; // A collection if nodes
+			vector<int> path; // The navigation to a certain node
+			DungeonNode *maximum; // The maximum node (if applicable)
+			
+			for (int task = 0; task < (this->tasks).size(); task++) {
+				if (0 <= abs((this->tasks)[task]) && abs((this->tasks)[task]) <= 6) {
+					
+					// switch for different tasks
+					switch ((this->tasks)[task]) {
+						case 1: 
+							this->dungeon->traverse(); 
+							break; 
+						case 2: 
+							this->dungeon->displaytree(); 
+							break; 
+						case 4: 
+							this->dungeon->displaytree(false); 
+							break; 
+						case 5: 
+							maximum = this->dungeon->extrema(1); 
+							path = this->dungeon->largesttreasure(); 
+							
+							for (int direction = 0; direction < path.size(); direction++) {
+								cout << path[direction] << "|"; 
+							}; 
+							cout << "=>" << maximum->getdata() << endl; 
+							break; 
+						case 6: 
+							nodes = this->dungeon->extrema_path(1); 
+							path = this->dungeon->bestpath(); 
+							
+							int sum = 0; 
+							for (int pointer = 0; pointer < nodes.size(); pointer++) {
+								sum += nodes[pointer]->getdata(); 
+								
+								if (pointer < path.size()) {
+									cout << path[pointer] << "|"; 
+								};
+							};
+							cout << "==>" << sum << endl; 
+							break; 
+					};
+				};
+			};
+		};
+}; 
 
 int main() {
-	int n; 
-	int l; 
-	int root_value; 
-	int tasks; 
-	int mode; 
-	Dungeon dungeon(0, n, l);  
-
+	Interface testing; 
+	if (testing.configure(false, true)) {
+		testing.query(true); 
+		testing.execute(); 
+	} 
 };
