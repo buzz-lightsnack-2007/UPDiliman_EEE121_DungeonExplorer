@@ -1,5 +1,3 @@
-#include <cstddef>
-# include <cstdlib>
 # include <iostream>
 # include <cmath>
 # include <vector>
@@ -7,6 +5,8 @@
 # include <stack>
 # include <algorithm>
 # include <map>
+
+# define DEBUG false
 
 using namespace std;
 
@@ -865,6 +865,10 @@ class Interface {
 		 * @param initialise (bool) - Run initialisation automatically after configuration? 
 		 */
 		Dungeon* configure(bool verbose, bool initialise = false) {
+			if (verbose) { // Display help
+				cout << "\033[1m\033[4m" << "Initialise tests" << "\033[0m" << endl; 
+			};
+			
 			if (verbose) {cout << "\033[1m"<< "L" << "\033[0m\t" << ": ";}; 
 			cin >> this->L; 
 			
@@ -879,8 +883,8 @@ class Interface {
 			this->L = abs(this->L); 
 			this->N = abs(this->N); 
 			
+			if (verbose) {cout << "Initialization \033[1m";};
 			if (initialise) {
-				if (verbose) {cout << "Initialization \033[1m";};
 				Dungeon* status = this->initialize(); 
 				
 				if (verbose) {
@@ -893,7 +897,7 @@ class Interface {
 				};
 				return status; 
 			}; 
-			if (verbose) {cout << "Initialization " << "\033[1m\033[31m" << "unsuccessful" << "\033[0m" << "." << endl; };
+			if (verbose) {cout << "unsuccessful" << "\033[0m" << "." << endl; };
 			return nullptr; 
 		};
 		
@@ -1009,8 +1013,8 @@ class Interface {
 
 int main() {
 	Interface testing; 
-	if (testing.configure(false, true)) {
-		testing.query(false); 
-		testing.execute(); 
-	} 
+	if (testing.configure(DEBUG, true)) {
+		testing.query(DEBUG); 
+		testing.execute(DEBUG); 
+	};
 };
